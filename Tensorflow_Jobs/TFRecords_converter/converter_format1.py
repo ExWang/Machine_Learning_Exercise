@@ -50,8 +50,10 @@ def _bytes_feature(value):
 
 
 def load_img(addr):
-    img = Image.open(addr)
-    img.tobytes()
+    img = cv2.imread(addr)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = img / 255.
+    img = img.astype(np.float32)
     return img
 
 # Function for debugging
@@ -192,12 +194,12 @@ def testMain():
             #bbox_list.append(box_this)
             box_num += 1
 
-        #print box_num, '\n', box_this.tostring()
+        # print box_num, '\n', box_this
         example = tf.train.Example(features=tf.train.Features(feature={
             'name': _int64_feature(img_name),
-            'box_num': _int64_feature(box_num),
+            #'box_num': _int64_feature(box_num),
             'bboxes': _ano_int64_feature(box_this),
-            'image_raw': _bytes_feature(image_raw)}))
+            'image_raw': _bytes_feature(tf.compat.as_bytes(image_raw.tostring()))}))
         writer.write(example.SerializeToString())
             #print("    {}-{}:{},{},{},{}".format(
             #    box_num, bbox.label, bbox.left, bbox.top, bbox.width, bbox.height))
@@ -211,4 +213,3 @@ def testMain():
 
 if __name__ == "__main__":
     testMain()
-
