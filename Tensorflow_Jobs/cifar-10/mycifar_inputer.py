@@ -60,7 +60,7 @@ def read_cifar10_bin(filedir, isTest):
     print lab
 
     Bytes2Read = num_vis + 1  # image + label
-    print Bytes2Read
+    print 'Bytes_to_read-->', Bytes2Read
     reader = tf.FixedLengthRecordReader(record_bytes=Bytes2Read)
     key, value_str = reader.read(filename_queue)
 
@@ -73,7 +73,7 @@ def read_cifar10_bin(filedir, isTest):
     image_raw = tf.reshape(image_raw, defalut_step1_reshapbox)
     image_raw = tf.transpose(image_raw, defalut_step2_transbox)
 
-    print image_raw, label
+    print 'image_raw-->', image_raw, '\nlabel-->', label
 
     return image_raw, label
 
@@ -98,7 +98,7 @@ def read_cifar10_py(filedir):
     print lab
 
     Bytes2Read = num_vis + 1  # image + label
-    print Bytes2Read
+    print 'Bytes_to_read-->', Bytes2Read
     reader = tf.FixedLengthRecordReader(record_bytes=Bytes2Read)
     key, value_str = reader.read(filename_queue)
 
@@ -112,7 +112,7 @@ def read_cifar10_py(filedir):
     image_raw = tf.transpose(image_raw, defalut_step2_transbox)
     image_raw = tf.cast(image_raw, tf.uint8)
 
-    print image_raw, label
+    print 'image_raw-->', image_raw, 'label-->', label
 
     return image_raw, label
 
@@ -160,8 +160,13 @@ def input_distorted(data_dir, batch_size, flag_test):  # Image processing for tr
     float_image.set_shape([height, width, 3])
     label.set_shape([1])
 
+    if flag_test:
+        examples_per_epoch = test_set_per_epoch
+    else:
+        examples_per_epoch = train_set_per_epoch
+
     min_fraction_of_examples_in_queue = 0.4
-    min_queue_examples = int(train_set_per_epoch *
+    min_queue_examples = int(examples_per_epoch *
                              min_fraction_of_examples_in_queue)
     print ('Filling queue with %d CIFAR images before starting to train. '
            'This will take a few minutes.' % min_queue_examples)
