@@ -260,4 +260,3 @@ if __name__ == "__main__":
             # print(example, l)
         coord.request_stop()
         coord.join(threads)
-
