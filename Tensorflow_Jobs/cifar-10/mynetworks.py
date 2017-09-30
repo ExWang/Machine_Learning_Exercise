@@ -4,6 +4,7 @@ import numpy as np
 import os
 import time
 import datetime
+import math
 from PIL import Image
 
 # My works
@@ -21,6 +22,8 @@ ITERATIONS = 10000
 ITER_SHOW = 30
 ITER_SUMMARY = 100
 ITER_CKPT_SAVE = 1000
+
+FLAG_RUN_ONCE = False
 
 
 height = mycf.fixed_height
@@ -134,6 +137,8 @@ def train_net():
         net = net_build(image)
         loss = losses(net, label)
 
+        tf.summary.scalar('loss', loss)
+
         optimizer = tf.train.GradientDescentOptimizer(learning_rate=LEARNING_RATE)
 
         train_op = optimizer.minimize(loss=loss, global_step=global_step)
@@ -194,6 +199,7 @@ def train_net():
                 coord.join(threads)
 
             sess.close()
+            print('Finished!')
 
 
 def evaluate():
@@ -202,22 +208,62 @@ def evaluate():
 
         logits = net_build(image)
 
-        # Calculate predictions.
-        top_k_op = tf.nn.in_top_k(logits, labels, 1)
+        # Calculate predictions.If all predictions in targets,out like tis [True, False, False ........]
+        top_k_op = tf.nn.in_top_k(predictions=logits, targets=labels, k=1)
 
         saver = tf.train.Saver(tf.all_variables())
 
         config = tf.ConfigProto()
-        config.gpu_options.per_process_gpu_memory_fraction = 0.2
+        config.gpu_options.per_process_gpu_memory_fraction = 0.9
 
-        with tf.Session() as sess:
+        summary_op = tf.summary.merge_all()
+        summary_writer = tf.summary.FileWriter(train_log_dir, g)
 
-            ckpt = tf.train.get_checkpoint_state(train_log_dir)
-            if ckpt and ckpt.model_checkpoint_path:
-                saver.restore(sess, ckpt.model_checkpoint_path)
-                print('Restore from ckpt file success!')
-            else:
-                print('No ckpt file found!')
+        while True:
+
+            with tf.Session() as sess:
+
+                ckpt = tf.train.get_checkpoint_state(train_log_dir)
+                if ckpt and ckpt.model_checkpoint_path:
+                    saver.restore(sess, ckpt.model_checkpoint_path)
+                    global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+                    print('Restore from ckpt file success!'+'\nglobal_step is:'+global_step)
+                else:
+                    print('No ckpt file found!')
+                coord = tf.train.Coordinator()
+                threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+
+                try:
+                    true_count = 0
+                    step = 0
+                    iterations = int(math.ceil(mycf.test_set_per_epoch / BATCH_SIZE))
+                    print ('>', iterations, '<')
+                    while step < iterations and not coord.should_stop():
+                        predictions = sess.run([top_k_op])
+                        true_count += np.sum(predictions)
+                        step += 1
+
+                    accuracy = float(true_count) / float(mycf.test_set_per_epoch)
+                    print('++++++++++++++++++++++++++++++++++++++')
+                    print('%s: Accuracy @ 1 = %.3f' % (datetime.datetime.now(), accuracy))
+                    print('++++++++++++++++++++++++++++++++++++++')
+
+                    summary = tf.Summary()
+                    summary.ParseFromString(sess.run(summary_op))
+                    summary.value.add(tag='Precision @ 1', simple_value=accuracy)
+                    summary_writer.add_summary(summary, global_step)
+
+                except tf.errors.OutOfRangeError as e:
+                    coord.request_stop(e)
+                finally:
+                    coord.request_stop()
+                    coord.join(threads)
+            sess.close()
+
+            if FLAG_RUN_ONCE:
+                break
+
+            time.sleep(2)
 
 
 if __name__ == "__main__":
