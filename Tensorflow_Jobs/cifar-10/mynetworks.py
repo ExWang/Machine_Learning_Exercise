@@ -23,7 +23,7 @@ ITER_SHOW = 30
 ITER_SUMMARY = 100
 ITER_CKPT_SAVE = 1000
 
-FLAG_RUN_ONCE = False
+FLAG_RUN_ONCE = True
 
 
 height = mycf.fixed_height
@@ -237,7 +237,7 @@ def evaluate():
                     true_count = 0
                     step = 0
                     iterations = int(math.ceil(mycf.test_set_per_epoch / BATCH_SIZE))
-                    print ('>', iterations, '<')
+                    print '>', iterations, '<'
                     while step < iterations and not coord.should_stop():
                         predictions = sess.run([top_k_op])
                         true_count += np.sum(predictions)
@@ -267,7 +267,7 @@ def evaluate():
 
 
 if __name__ == "__main__":
-    # train_net()
+    train_net()
     evaluate()
     print('Finished!')
 
