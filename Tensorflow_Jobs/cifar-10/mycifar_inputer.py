@@ -150,12 +150,18 @@ def input_distorted(data_dir, batch_size, flag_test):  # Image processing for tr
     height = fixed_height
     width = fixed_width
 
-    distorted_image = tf.random_crop(reshaped_image, [height, width, 3])
-    distorted_image = tf.image.random_flip_left_right(distorted_image)
-    distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
-    distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
+    if not flag_test:
+        distorted_image = tf.random_crop(reshaped_image, [height, width, 3])
+        distorted_image = tf.image.random_flip_left_right(distorted_image)
+        distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
+        distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
 
-    float_image = tf.image.per_image_standardization(distorted_image)
+        float_image = tf.image.per_image_standardization(distorted_image)
+
+    else:
+        resized_image = tf.image.resize_image_with_crop_or_pad(reshaped_image, height, width)
+        float_image = tf.image.per_image_standardization(resized_image)
+
     # Set the shapes of tensors.
     float_image.set_shape([height, width, 3])
     label.set_shape([1])
@@ -260,3 +266,4 @@ if __name__ == "__main__":
             # print(example, l)
         coord.request_stop()
         coord.join(threads)
+
