@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 from xml.etree import ElementTree as et
-
+import myPath
 
 
 def read_xml(text):
